@@ -1,12 +1,13 @@
-import React from 'react';
+
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '../components/ThemedText';
 import ThemedView from '../components/ThemedView';
 import Card from '../components/Card';
 import HamburgerMenu from '../components/HamburgerMenu';
+import React, { useState } from 'react';
 
-const SupervisorHomePage: React.FC = () => {
+const SupervisorHomePage: React.FC<{ navigation: any }> = ({ navigation }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const toggleMenu = () => {
         setMenuOpen(!menuOpen)
@@ -33,8 +34,16 @@ return (
         <Card title="Switch View" description="Switch to a driver or student rider view." buttonLabel="Switch" />
         <Card title="Users" description="View and manage user profiles and access." buttonLabel="Users" />
         <Card title="Generate Report" description="Generate detailed reports on user activity." buttonLabel="Go" />
-      </View>
 
+
+         <Card
+          title="Track Active Ride"
+          description="Monitor the status of ongoing rides in real-time."
+          buttonLabel="Track"
+          // Navigate to the UserActiveRiding screen on button press
+          onPress={() => navigation.navigate('UserActiveRiding')}
+        />
+ </View>
       {/* Log Out Button */}
       <TouchableOpacity style={styles.logoutButton}>
         <ThemedText type="defaultSemiBold" style={styles.logoutText}>Log Out</ThemedText>
