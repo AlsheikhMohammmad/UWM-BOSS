@@ -4,4 +4,7 @@ export type RootStackParamList = {
   SupervisorUser: undefined;
   SupervisorEdit: { username: string };
   CreateAccount: undefined;
+  SupervisorCreate: undefined;
+  RiderDashboard: undefined;
+  UserEditInfo: { username: string };
 };

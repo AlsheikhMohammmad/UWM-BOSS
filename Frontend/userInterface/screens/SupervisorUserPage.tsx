@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import {View, ScrollView, StyleSheet, ActivityIndicator, Alert, TouchableOpacity} from 'react-native';
 import ThemedText from '../components/ThemedText';
 import ThemedView from '../components/ThemedView';
 import Card from '../components/Card';
@@ -55,6 +55,10 @@ const SupervisorUserPage: React.FC = () => {
         setMenuOpen(!menuOpen);
     };
 
+    const handleCreateUser = () => {
+        navigation.navigate('SupervisorCreate'); // Navigate to SupervisorCreate screen
+    };
+
     return (
         <ThemedView style={styles.container}>
             {/* Hamburger Menu */}
@@ -64,6 +68,9 @@ const SupervisorUserPage: React.FC = () => {
             <View style={styles.header}>
                 <Ionicons name="menu" size={32} color="black" onPress={toggleMenu} />
                 <ThemedText type="title" style={styles.headerText}>Manage Users</ThemedText>
+                <TouchableOpacity style={styles.squareButton} onPress={handleCreateUser}>
+                    <Ionicons name="create-outline" size={24} color="white" />
+                </TouchableOpacity>
             </View>
 
             {/* Content Area */}
@@ -89,27 +96,12 @@ const SupervisorUserPage: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: 'white',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    headerText: {
-        flex: 1,
-        fontSize: 28,
-        textAlign: 'center',
-    },
-    scrollContainer: {
-        paddingBottom: 20,
-    },
-    loadingIndicator: {
-        marginTop: 20,
-    },
+    container: {flex: 1, padding: 20, backgroundColor: 'white',},
+    header: {flexDirection: 'row', alignItems: 'center', marginBottom: 20,},
+    headerText: {flex: 1, fontSize: 28, textAlign: 'center',},
+    scrollContainer: {paddingBottom: 20,},
+    loadingIndicator: {marginTop: 20,},
+    squareButton: {width: 40, height: 40, backgroundColor: 'green', alignItems: 'center', justifyContent: 'center', borderRadius: 5,},
 });
 
 export default SupervisorUserPage;

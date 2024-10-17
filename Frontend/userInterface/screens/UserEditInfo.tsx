@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Text } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import ThemedText from '../components/ThemedText';
 import ThemedView from '../components/ThemedView';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@/components/navigation/NavigationTypes";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-type EditUserPageNavigationProp = StackNavigationProp<RootStackParamList, 'SupervisorEdit'>;
+type UserEditInfoNavigationProp = StackNavigationProp<RootStackParamList, 'UserEditInfo'>;
 type RouteParams = { username: string };
 
-const SupervisorEditUser: React.FC = () => {
-    const navigation = useNavigation<EditUserPageNavigationProp>();
+const UserEditInfo: React.FC = () => {
+    const navigation = useNavigation<UserEditInfoNavigationProp>();
     const route = useRoute();
     const { username } = route.params as RouteParams;
 
@@ -19,7 +20,7 @@ const SupervisorEditUser: React.FC = () => {
         email: '',
         phone_number: '',
         address: '',
-        user_type: '',
+        password: '',  // Added password field
     });
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -39,7 +40,7 @@ const SupervisorEditUser: React.FC = () => {
                     email: userData.email,
                     phone_number: userData.phone_number,
                     address: userData.address,
-                    user_type: userData.user_type,
+                    password: '', // Reset password field
                 });
             } else {
                 Alert.alert('Error', data.error || 'Failed to fetch user details.');
@@ -51,14 +52,17 @@ const SupervisorEditUser: React.FC = () => {
         }
     };
 
-    const handleUpdateUser = async () => {
+    const handleUpdateInfo = async () => {
         try {
             const response = await fetch(`http://127.0.0.1:8000/api/manage-users/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username,
-                    edit_info: user,
+                    edit_info: {
+                        ...user,
+                        password: user.password,
+                    },
                 }),
             });
             const data = await response.json();
@@ -73,25 +77,39 @@ const SupervisorEditUser: React.FC = () => {
         }
     };
 
-    const handleDeleteUser = async () => {
-        try {
-            const response = await fetch(`http://127.0.0.1:8000/api/manage-users/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username,
-                    delete: true,
-                }),
-            });
-            if (response.ok) {
-                Alert.alert('Success', 'User deleted successfully.');
-                navigation.goBack();
-            } else {
-                Alert.alert('Error', 'Error deleting user.');
-            }
-        } catch (error) {
-            Alert.alert('Error', 'Failed to delete user.');
-        }
+    const handleDeleteAccount = async () => {
+        // Alert.alert(
+        //    "Confirm Deletion",
+        //    "Are you sure you want to delete your account? This action cannot be undone.",
+        //    [
+        //        {
+        //            text: "Cancel",
+        //            style: "cancel"
+        //        },
+        //        { text: "OK", onPress: async () => {
+                    try {
+                        const response = await fetch(`http://127.0.0.1:8000/api/manage-users/`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                username,
+                                delete: true,
+                            }),
+                        });
+                        if (response.ok) {
+                            await AsyncStorage.removeItem('accessToken');
+                            await AsyncStorage.removeItem('refreshToken');
+                            Alert.alert('Success', 'account deleted successfully.');
+                            navigation.navigate('Login');
+                        } else {
+                            Alert.alert('Error', 'Error deleting user.');
+                        }
+                    } catch (error) {
+                        Alert.alert('Error', 'Failed to delete user.');
+                    }
+        //        }}
+        //    ]
+        //);
     };
 
     return (
@@ -124,26 +142,20 @@ const SupervisorEditUser: React.FC = () => {
                         onChangeText={(text) => setUser({ ...user, address: text })}
                         style={styles.input}
                     />
+                    <TextInput
+                        placeholder="New Password"
+                        value={user.password}
+                        onChangeText={(text) => setUser({ ...user, password: text })}
+                        style={styles.input}
+                        secureTextEntry // Secure entry for password
+                    />
 
-                    <View style={styles.radioContainer}>
-                        {['Rider', 'Driver'].map((type) => (
-                            <TouchableOpacity
-                                key={type}
-                                style={styles.radioButton}
-                                onPress={() => setUser({ ...user, user_type: type[0] })}
-                            >
-                                <View style={user.user_type === type[0] ? styles.selectedRadio : styles.unselectedRadio} />
-                                <Text>{type}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    <TouchableOpacity onPress={handleUpdateUser} style={styles.updateButton}>
-                        <ThemedText type="buttonText" style={styles.buttonText}>Update User</ThemedText>
+                    <TouchableOpacity onPress={handleUpdateInfo} style={styles.updateButton}>
+                        <ThemedText type="buttonText" style={styles.buttonText}>Update Info</ThemedText>
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={handleDeleteUser} style={styles.deleteButton}>
-                        <ThemedText type="buttonText" style={styles.buttonText}>Delete User</ThemedText>
+                    <TouchableOpacity onPress={handleDeleteAccount} style={styles.deleteButton}>
+                        <ThemedText type="buttonText" style={styles.buttonText}>Delete Account</ThemedText>
                     </TouchableOpacity>
 
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -158,14 +170,10 @@ const SupervisorEditUser: React.FC = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, padding: 20 },
     input: { height: 50, borderColor: 'gray', borderWidth: 1, marginBottom: 15, paddingHorizontal: 10 },
-    radioContainer: { flexDirection: 'row', alignItems: 'flex-start', marginVertical: 15 },
-    radioButton: { flexDirection: 'row', alignItems: 'center', marginRight: 15 },
-    selectedRadio: { width: 20, height: 20, borderRadius: 10, backgroundColor: 'blue', marginRight: 10 },
-    unselectedRadio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1, borderColor: 'gray', marginRight: 10 },
     updateButton: { backgroundColor: 'blue', padding: 15, alignItems: 'center', borderRadius: 10, marginBottom: 10 },
     deleteButton: { backgroundColor: 'red', padding: 15, alignItems: 'center', borderRadius: 10, marginBottom: 10 },
     backButton: { backgroundColor: 'gray', padding: 15, alignItems: 'center', borderRadius: 10 },
     buttonText: { color: 'white', fontSize: 16 },
 });
 
-export default SupervisorEditUser;
+export default UserEditInfo;

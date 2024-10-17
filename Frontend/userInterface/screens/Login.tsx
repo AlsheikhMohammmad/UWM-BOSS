@@ -38,9 +38,12 @@ const LoginScreen: React.FC = () => {
       if (response.status === 200) {
         await AsyncStorage.setItem('accessToken', data.access);
         await AsyncStorage.setItem('refreshToken', data.refresh);
+        await AsyncStorage.setItem('username', username);
 
         if (data.user_type === "S") {
           navigation.navigate('SupervisorHome');
+        } else if(data.user_type === "R"){
+          navigation.navigate('RiderDashboard');
         }
       } else if (response.status === 400) {
         setErrorMessage(data.error);

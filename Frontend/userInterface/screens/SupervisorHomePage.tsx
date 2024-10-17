@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '../components/ThemedText';
@@ -32,19 +32,19 @@ const SupervisorHomePage: React.FC = () => {
 
   useEffect(() => {
     const checkLoginStatus = async () => {
-        const accessToken = await AsyncStorage.getItem('accessToken');
-        if (!accessToken) {
-            navigation.navigate('Login');
-        }
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      if (!accessToken) {
+        navigation.navigate('Login');
+      }
     };
     checkLoginStatus();
-    }, []);
+  }, []);
 
-const handleUserList = async () => {
+  const handleUserList = async () => {
     navigation.navigate('SupervisorUser');
-};
+  };
 
-return (
+  return (
     <ThemedView style={styles.container}>
       {/* Hamburger Menu */}
       <HamburgerMenu isOpen={menuOpen} toggleMenu={toggleMenu} />
@@ -63,26 +63,26 @@ return (
       {/* Cards Section */}
       <View style={styles.cardsContainer}>
         <Card
-            title="Switch View"
-            description="Switch to a driver or student rider view."
-            buttonLabel="Switch"
-            onPress={() => {
-                // switch view logic
-            }}
+          title="Switch View"
+          description="Switch to a driver or student rider view."
+          buttonLabel="Switch"
+          onPress={() => {
+            // switch view logic
+          }}
         />
         <Card
-            title="Users"
-            description="View and manage user profiles and access."
-            buttonLabel="Users"
-            onPress={handleUserList}
+          title="Users"
+          description="View and manage user profiles and access."
+          buttonLabel="Users"
+          onPress={handleUserList}
         />
         <Card
-            title="Generate Report"
-            description="Generate detailed reports on user activity."
-            buttonLabel="Go"
-            onPress={() => {
-                // generate report logic
-            }}
+          title="Generate Report"
+          description="Generate detailed reports on user activity."
+          buttonLabel="Go"
+          onPress={() => {
+            // generate report logic
+          }}
         />
       </View>
 
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 20, marginTop: 5, color: 'gray' },
   cardsContainer: { flex: 1, justifyContent: 'space-around' },
   logoutButton: { backgroundColor: 'red', padding: 15, borderRadius: 10, marginTop: 20, alignItems: 'center' },
-  logoutText: { color: 'white', fontSize: 16 }
+  logoutText: { color: 'white', fontSize: 16 },
 });
 
 export default SupervisorHomePage;
