@@ -91,3 +91,36 @@ class RideManagementTests(TestCase):
         ride = self.ride_manage_fun.get_all()[0]
         result = self.ride_manage_fun.assign_driver(ride.id)
         self.assertTrue(result)
+
+    def test_create_ride_success(self):
+        result = self.ride_manage_fun.create(rider=self.rider, ride_info=self.ride_info)
+        self.assertTrue(result)
+
+    def test_create_ride_wrong_user(self):
+        result = self.ride_manage_fun.create(rider=self.driver, ride_info=self.ride_info)
+        self.assertFalse(result)
+
+    def test_create_ride_no_pickup(self):
+        test_ride = {
+            'pickup_location': '',
+            'dropoff_location': '123 test ST',
+            'passengers': 3,
+            'ADA_required': True,
+            'van': self.van,
+            'driver': self.driver,
+        }
+        result = self.ride_manage_fun.create(rider=self.rider, ride_info=test_ride)
+        self.assertFalse(result)
+
+    def test_create_ride_no_dropoff(self):
+        test_ride = {
+            'pickup_location': '123 test ST',
+            'dropoff_location': '',
+            'passengers': 3,
+            'ADA_required': True,
+            'van': self.van,
+            'driver': self.driver,
+        }
+        result = self.ride_manage_fun.create(rider=self.rider, ride_info=test_ride)
+        self.assertFalse(result)
+

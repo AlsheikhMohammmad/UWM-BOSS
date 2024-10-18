@@ -65,3 +65,21 @@ def delete_ride(request, ride_id):
         return Response({"message": "Ride deleted successfully."}, status=status.HTTP_200_OK)
     else:
         return Response({"error": "Ride not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['CREATE'])
+def create_ride(request, rider, ride_info):
+    result = RideManagement().create(rider, ride_info)
+    if result:
+        return Response({"message": "Ride created successfully."}, status=status.HTTP_201_CREATED)
+    else:
+        return Response({"error": "Error creating ride."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['EDIT'])
+def edit_ride(request, ride_id, updated_info):
+    result = RideManagement().edit(ride_id, updated_info)
+    if result:
+        return Response({"message": "Ride updated successfully."}, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "Error updating ride."}, status=status.HTTP_400_BAD_REQUEST)
