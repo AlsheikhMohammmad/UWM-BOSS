@@ -21,9 +21,6 @@ class VanManagement:
         if not all(field in info for field in required_fields):
             return False
 
-        if False in [info[field] for field in required_fields]:
-            return False
-
         # check for duplicate
         if Van.objects.filter(van_number=info['van_number']).exists():
             return False
@@ -48,15 +45,19 @@ class VanManagement:
     Out: boolean indicating success
     """
 
-    def edit(self, van_number: str, info: dict) -> bool:
+    def edit(self, van_id: str, info: dict) -> bool:
         try:
-            van = Van.objects.get(van_number=van_number)
+            van = Van.objects.get(id=van_id)
         except ObjectDoesNotExist:
             return False
 
-        for field in ['ADA', 'driver']:
-            if field in info:
-                setattr(van, field, info[field])
+        if 'van_number' in info:
+            van_number = info['van_number']
+            if not van_number or Van.objects.filter(van_number=van_number).exclude(id=van_id).exists():
+                return False
+
+        for field in info:
+            setattr(van, field, info[field])
 
         van.save()
         return True
@@ -71,9 +72,9 @@ class VanManagement:
     Out: boolean indicating success
     """
 
-    def delete(self, van_number: int) -> bool:
+    def delete(self, van_id: int) -> bool:
         try:
-            van = Van.objects.get(van_number=van_number)
+            van = Van.objects.get(id=van_id)
         except ObjectDoesNotExist:
             return False
 

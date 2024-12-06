@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {Alert, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {StackNavigationProp} from "@react-navigation/stack";
@@ -23,11 +23,32 @@ const SupervisorCreate: React.FC = () => {
     const [emailPrefix, setEmailPrefix] = useState('');
     const [user_type, setUserType] = useState('');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [unmetRequirements, setUnmetRequirements] = useState<string[]>([]);
+
+    const passwordRequirements = [
+        { test: (pw: string) => pw.length >= 8, message: "At least 8 characters long" },
+        { test: (pw: string) => /[A-Z]/.test(pw), message: "At least one uppercase letter" },
+        { test: (pw: string) => /[a-z]/.test(pw), message: "At least one lowercase letter" },
+        { test: (pw: string) => /[0-9]/.test(pw), message: "At least one number" },
+        { test: (pw: string) => /[@#!<%]/.test(pw), message: "At least one special character (@,#,!<%)" },
+    ];
+
+    useEffect(() => {
+        const unmet = passwordRequirements
+            .filter(req => !req.test(password))
+            .map(req => req.message);
+        setUnmetRequirements(unmet);
+    }, [password]);
 
     const handleCreateAccount = async () => {
         const email = `${emailPrefix}@uwm.edu`;
         if (!username || !password || !name || !phoneNumber || !address || !email || !user_type) {
             setErrorMessage('Please fill in all fields.');
+            return;
+        }
+
+        // Check if all password requirements are met before submission
+        if (unmetRequirements.length > 0) {
             return;
         }
 
@@ -124,6 +145,7 @@ const SupervisorCreate: React.FC = () => {
                 <Text style={styles.emailDomain}>@uwm.edu</Text>
             </View>
             <Text style={styles.helperText}>You can use letters, numbers & periods</Text>
+            
             <Text style={styles.label}>Password:</Text>
             <TextInput
                 placeholder="Password"
@@ -133,6 +155,15 @@ const SupervisorCreate: React.FC = () => {
                 style={styles.input}
                 placeholderTextColor="gray"
             />
+            {unmetRequirements.length > 0 && (
+                <View style={{marginVertical: 5}}>
+                    {unmetRequirements.map((req, index) => (
+                        <Text key={index} style={{color: 'red', fontSize: 12}}>
+                            • {req}
+                        </Text>
+                    ))}
+                </View>
+            )}
 
             {errorMessage && <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>}
 

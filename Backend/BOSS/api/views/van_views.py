@@ -28,28 +28,33 @@ def get_van_by_number(request, van_number):
 def create_van(request):
     """Create a new van."""
     van_info = request.data
-    driver = User.objects.get(username=van_info['driver'])
-    van_info['driver'] = driver
+    if 'driver' in van_info and van_info['driver']:
+        driver = User.objects.get(username=van_info['driver'])
+        van_info['driver'] = driver
+    else:
+        van_info['driver'] = None
     if VanManagement().create(van_info):
         return Response({"message": "Van created successfully."}, status=status.HTTP_201_CREATED)
     return Response({"error": "Invalid data or van already exists."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['PUT'])
-def edit_van(request, van_number):
+def edit_van(request, van_id):
     """Edit van details."""
     updated_info = request.data
-    driver = User.objects.get(name=updated_info['driver'])
-    updated_info['driver'] = driver
-    if VanManagement().edit(van_number, updated_info):
+    driver = updated_info.get('driver', None)
+    if driver:
+        driver = User.objects.get(username=driver['username'])
+        updated_info['driver'] = driver
+    if VanManagement().edit(van_id, updated_info):
         return Response({"message": "Van updated successfully."}, status=status.HTTP_200_OK)
     return Response({"error": "Van not found or invalid data."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['DELETE'])
-def delete_van(request, van_number):
+def delete_van(request, van_id):
     """Delete a van."""
-    if VanManagement().delete(van_number):
+    if VanManagement().delete(van_id):
         return Response({"message": "Van deleted successfully."}, status=status.HTTP_200_OK)
     return Response({"error": "Van not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -75,13 +80,15 @@ def get_van_by_driver(request, driver_username):
     except Van.DoesNotExist:
         return Response({"error": "No van found for the driver."}, status=status.HTTP_404_NOT_FOUND)
 
+
 @api_view(['GET'])
 def get_all_drivers(request):
     """Retrieve all users who are drivers."""
     try:
-        # Fetch all users with role 'D' (Driver role)
-        drivers = User.objects.filter(user_type='D')
-        serializer = UserSerializer(drivers, many=True)  # Serialize the users as drivers
+        # Fetch all users with role 'D' (Driver role) that are available
+        available_drivers = User.objects.filter(user_type='D').exclude(
+            id__in=Van.objects.filter(driver__isnull=False).values('driver'))
+        serializer = UserSerializer(available_drivers, many=True)  # Serialize the users as drivers
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

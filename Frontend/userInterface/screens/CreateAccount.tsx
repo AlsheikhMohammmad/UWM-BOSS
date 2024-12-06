@@ -154,6 +154,7 @@ const CreateAccount: React.FC = () => {
                 placeholderTextColor="gray"
             />
 
+
             {/* Display unmet requirements */}
             {unmetRequirements.length > 0 && (
                 <View style={{marginVertical: 5}}>
@@ -164,6 +165,7 @@ const CreateAccount: React.FC = () => {
                     ))}
                 </View>
             )}
+
 
             <Text style={styles.label}>Confirm Password:</Text>
             <TextInput
