@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/components/navigation/NavigationTypes';
 import ThemedText from '@/components/ThemedText';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import forgetPassword from '../styles/ForgetPassword';
 import baseStyles from '../styles/General';
 
@@ -18,6 +18,7 @@ const ForgetPassword: React.FC = () => {
     const [password, setPassword] = useState('');
     const [rePassword, setRePassword] = useState('');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
     const [passwordCriteria, setPasswordCriteria] = useState({
         length: false,
         uppercase: false,
@@ -26,20 +27,16 @@ const ForgetPassword: React.FC = () => {
         specialChar: false,
     });
 
-    const validatePassword = (password: string) => {
-        const criteria = {
-            length: password.length >= 8,
-            uppercase: /[A-Z]/.test(password),
-            lowercase: /[a-z]/.test(password),
-            number: /[0-9]/.test(password),
-            specialChar: /[@#%!&*]/.test(password),
-        };
-        setPasswordCriteria(criteria);
-    };
+    const handlePasswordChange = (input: string) => {
+        setPassword(input);
 
-    const handlePasswordChange = (value: string) => {
-        setPassword(value);
-        validatePassword(value);
+        setPasswordCriteria({
+            length: input.length >= 8,
+            uppercase: /[A-Z]/.test(input),
+            lowercase: /[a-z]/.test(input),
+            number: /\d/.test(input),
+            specialChar: /[@#*!%$]/.test(input),
+        });
     };
 
     const handleForgetPassword = async () => {
@@ -48,13 +45,7 @@ const ForgetPassword: React.FC = () => {
             return;
         }
         if (password !== rePassword) {
-            setErrorMessage('Passwords do not match. Please re-enter your new password.');
-            return;
-        }
-
-        const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
-        if (!isPasswordValid) {
-            setErrorMessage('Please meet all password requirements.');
+            setErrorMessage('Passwords do not match, re-enter your new password.');
             return;
         }
 
@@ -70,7 +61,7 @@ const ForgetPassword: React.FC = () => {
                 }),
             });
             const data = await response.json();
-            setErrorMessage(data.message || 'Password reset successful.');
+            setErrorMessage(data.message);
         } catch (error) {
             setErrorMessage('Failed to connect. Please check your internet connection.');
         }
@@ -85,20 +76,26 @@ const ForgetPassword: React.FC = () => {
                 <ThemedText type="title" style={styles.headerText}>Reset Password</ThemedText>
             </View>
             <Text style={styles.label}>Username</Text>
-            <TextInput
-                placeholder="Username"
-                onChangeText={setUsername}
-                style={styles.input}
-                placeholderTextColor="gray"
-            />
+            <View style={styles.inputWithIcon}>
+                <Ionicons name="person-circle-outline" size={20} color="#007bff" />
+                <TextInput
+                    placeholder="Username"
+                    onChangeText={setUsername}
+                    style={styles.input}
+                    placeholderTextColor="gray"
+                />
+            </View>
             <Text style={styles.label}>New Password</Text>
-            <TextInput
-                placeholder="Password"
-                onChangeText={handlePasswordChange}
-                secureTextEntry
-                style={styles.input}
-                placeholderTextColor="gray"
-            />
+            <View style={styles.inputWithIcon}>
+                <FontAwesome name="lock" size={20} color="#007bff" />
+                <TextInput
+                    placeholder="Password"
+                    onChangeText={handlePasswordChange}
+                    secureTextEntry
+                    style={styles.input}
+                    placeholderTextColor="gray"
+                />
+            </View>
             <View style={styles.passwordCriteria}>
                 <Text style={{ color: passwordCriteria.length ? 'green' : 'red' }}>
                     • At least 8 characters long
@@ -113,19 +110,24 @@ const ForgetPassword: React.FC = () => {
                     • At least one number
                 </Text>
                 <Text style={{ color: passwordCriteria.specialChar ? 'green' : 'red' }}>
-                    • At least one special character (@, #, %, !, &)
+                    • At least one special character (@, #, !, *, %, $)
                 </Text>
             </View>
-            <TextInput
-                placeholder="Re-enter Password"
-                onChangeText={setRePassword}
-                secureTextEntry
-                style={styles.input}
-                placeholderTextColor="gray"
-            />
-
+            <Text style={styles.label}>Re-enter Password</Text>
+            <View style={styles.inputWithIcon}>
+                <FontAwesome name={password === rePassword ? 'check-circle' : 'times-circle'}
+                             size={20}
+                             color={password === rePassword ? 'green' : 'red'}
+                />
+                <TextInput
+                    placeholder="Re-enter Password"
+                    onChangeText={setRePassword}
+                    secureTextEntry
+                    style={styles.input}
+                    placeholderTextColor="gray"
+                />
+            </View>
             {errorMessage && <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>}
-
             <TouchableOpacity onPress={handleForgetPassword} style={styles.resetButton}>
                 <Text style={styles.resetText}>Reset Password</Text>
             </TouchableOpacity>
