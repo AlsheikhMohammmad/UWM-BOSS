@@ -54,7 +54,7 @@ cd uwm-boss
     ```
 2. Install the required modules:
     ```bash
-    npm install
+    npm install --force
     ```
 3. Start the Expo development server:
     ```bash
