@@ -1,24 +1,36 @@
-import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, Platform, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    Platform,
+} from 'react-native';
 import ThemedText from '../components/ThemedText';
 import ThemedView from '../components/ThemedView';
-import {useNavigation, useRoute} from '@react-navigation/native';
-import {StackNavigationProp} from "@react-navigation/stack";
-import {RootStackParamList} from "@/components/navigation/NavigationTypes";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import {Ionicons} from "@expo/vector-icons";
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '@/components/navigation/NavigationTypes';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import baseStyles from '../styles/General';
 import editInfo from '../styles/EditInfo';
 
-const styles = { ...baseStyles, ...editInfo};
+const styles = { ...baseStyles, ...editInfo };
+
+const API_BASE_URL = 'https://mohammadalsheikh.pythonanywhere.com/api';
 
 type UserEditInfoNavigationProp = StackNavigationProp<RootStackParamList, 'UserEditInfo'>;
-type RouteParams = { username: string };
+type UserEditInfoRouteProp = RouteProp<RootStackParamList, 'UserEditInfo'>;
 
 const UserEditInfo: React.FC = () => {
     const navigation = useNavigation<UserEditInfoNavigationProp>();
-    const route = useRoute();
-    const {username} = route.params as RouteParams;
+    const route = useRoute<UserEditInfoRouteProp>();
+    const { username } = route.params;
+
     const [user, setUser] = useState({
         name: '',
         phone_number: '',
@@ -29,16 +41,29 @@ const UserEditInfo: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [oldPassword, setOldPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [RePassword, setRePassword] = useState('');
+    const [rePassword, setRePassword] = useState('');
+    const [passwordMatch, setPasswordMatch] = useState<boolean | null>(null);
+    const [passwordCriteria, setPasswordCriteria] = useState({
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        specialChar: false,
+    });
 
     useEffect(() => {
-        fetchUserDetails();
+        const fetchDetails = async () => {
+            await fetchUserDetails();
+        };
+        fetchDetails();
     }, []);
 
     const fetchUserDetails = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`https://mohammadalsheikh.pythonanywhere.com/api/manage-users/?username=${username}`);
+            const response = await fetch(
+                `${API_BASE_URL}/manage-users/?username=${username}`
+            );
             const data = await response.json();
             if (response.ok && data.length > 0) {
                 const userData = data[0];
@@ -60,27 +85,42 @@ const UserEditInfo: React.FC = () => {
         }
     };
 
+    const handlePasswordChange = (input: string) => {
+        setUser({ ...user, password: input });
+        setPasswordCriteria({
+            length: input.length >= 8,
+            uppercase: /[A-Z]/.test(input),
+            lowercase: /[a-z]/.test(input),
+            number: /\d/.test(input),
+            specialChar: /[@#*!%$]/.test(input),
+        });
+    };
+
+    const handleRePasswordChange = (input: string) => {
+        setRePassword(input);
+        setPasswordMatch(input === user.password);
+    };
+
     const handleUpdateInfo = async () => {
         if (!oldPassword.trim()) {
-            setErrorMessage('Please enter your current password!')
+            setErrorMessage('Please enter your current password!');
             return;
         }
-        if (!user.password.trim()) {
-            if (user.password != RePassword) {
-                setErrorMessage("Passwords do not match, re-enter your new password.");
-                return;
-            }
+        if (user.password && user.password !== rePassword) {
+            setErrorMessage('Passwords do not match, re-enter your new password.');
+            return;
         }
         const email = `${emailPrefix}@uwm.edu`;
         try {
-            const response = await fetch(`https://mohammadalsheikh.pythonanywhere.com/api/manage-users/`, {
+            const response = await fetch(`${API_BASE_URL}/manage-users/`, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username,
                     oldPassword,
                     edit_info: {
-                        ...user, email
+                        ...user,
+                        email,
                     },
                 }),
             });
@@ -92,15 +132,7 @@ const UserEditInfo: React.FC = () => {
                 setErrorMessage(data.error);
             }
         } catch (error) {
-            setErrorMessage("Current password incorrect!");
-        }
-    };
-
-    const showAlert = (title: string, message: string) => {
-        if (Platform.OS === 'web') {
-            window.alert(`${title}: ${message}`);
-        } else {
-            Alert.alert(title, message);
+            setErrorMessage('Current password incorrect!');
         }
     };
 
@@ -110,37 +142,25 @@ const UserEditInfo: React.FC = () => {
             return;
         }
 
-        if (Platform.OS === 'web') {
-            // For web, use window.confirm for confirmation
-            if (window.confirm("Are you sure? This action cannot be undone.")) {
-                await deleteAccount();
-            }
-        } else {
-            // For native, use React Native's Alert for confirmation
-            Alert.alert(
-                "Confirm Deletion",
-                "Are you sure? This action cannot be undone.",
-                [
-                    {
-                        text: "Cancel",
-                        style: "cancel"
-                    },
-                    {
-                        text: "OK",
-                        onPress: async () => {
-                            await deleteAccount();
-                        }
-                    }
-                ]
-            );
-        }
-    };
+        const confirmDelete = Platform.OS === 'web'
+            ? window.confirm('Are you sure? This action cannot be undone.')
+            : await new Promise((resolve) => {
+                Alert.alert(
+                    'Delete Account',
+                    'Are you sure? This action cannot be undone.',
+                    [
+                        { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+                        { text: 'Yes', onPress: () => resolve(true) },
+                    ]
+                );
+            });
 
-    const deleteAccount = async () => {
+        if (!confirmDelete) return;
+
         try {
-            const response = await fetch(`https://mohammadalsheikh.pythonanywhere.com/api/manage-users/`, {
+            const response = await fetch(`${API_BASE_URL}/manage-users/`, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     oldPassword,
                     username,
@@ -149,13 +169,12 @@ const UserEditInfo: React.FC = () => {
             });
 
             if (response.ok) {
-                // Removing tokens from AsyncStorage after deletion
                 await AsyncStorage.removeItem('accessToken');
                 await AsyncStorage.removeItem('refreshToken');
-                showAlert("Account Deleted", "Your account has been deleted successfully!");
+                Alert.alert('Account Deleted', 'Your account has been deleted successfully!');
                 navigation.navigate('Login');
             } else {
-                console.error('Error', 'Error deleting user.');
+                setErrorMessage('Error deleting user. Please try again.');
             }
         } catch (error) {
             console.error('Error', 'Failed to delete user.');
@@ -166,57 +185,49 @@ const UserEditInfo: React.FC = () => {
         <ThemedView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back-circle" size={30} color="black"/>
+                    <Ionicons name="arrow-back-circle" size={30} color="black" />
                 </TouchableOpacity>
                 <ThemedText type="title" style={styles.headerText}>Edit Account</ThemedText>
                 <TouchableOpacity onPress={handleDeleteAccount}>
-                    <Ionicons name="trash" size={30} color="red"/>
+                    <Ionicons name="trash" size={30} color="red" />
                 </TouchableOpacity>
             </View>
             {loading ? (
-                <ActivityIndicator size="large" color="#0000ff"/>
+                <ActivityIndicator size="large" color="#0000ff" />
             ) : (
                 <View>
-                    <Text style={styles.label}>Name:</Text>
+                    <Text style={styles.sectionTitle}>Personal Details</Text>
+                    <Text style={styles.label}><FontAwesome5 name="user" /> Name:</Text>
                     <TextInput
                         placeholder="Name"
                         value={user.name}
-                        onChangeText={(text) => setUser({...user, name: text})}
+                        onChangeText={(text) => setUser({ ...user, name: text })}
                         style={styles.input}
                         placeholderTextColor="gray"
                     />
-                    <Text style={styles.label}>Email:</Text>
+                    <Text style={styles.label}><FontAwesome5 name="envelope" /> Email:</Text>
                     <View style={styles.emailContainer}>
                         <TextInput
                             placeholder="Enter email address"
                             value={emailPrefix}
-                            onChangeText={(text) => {
-                                if (!text.includes('@')) setEmailPrefix(text);
-                            }}
+                            onChangeText={(text) => setEmailPrefix(text)}
                             style={styles.emailInput}
                             placeholderTextColor="gray"
                         />
-                        <View style={styles.verticalLine}/>
+                        <View style={styles.verticalLine} />
                         <Text style={styles.emailDomain}>@uwm.edu</Text>
                     </View>
-                    <Text style={styles.helperText}>You can use letters, numbers & periods</Text>
-                    <Text style={styles.label}>Phone Number:</Text>
+                    <Text style={styles.label}><FontAwesome5 name="home" /> Home Address:</Text>
                     <TextInput
-                        placeholder="Phone Number"
-                        value={user.phone_number}
-                        onChangeText={(text) => setUser({...user, phone_number: text})}
-                        style={styles.input}
-                        placeholderTextColor="gray"
-                    />
-                    <Text style={styles.label}>Address:</Text>
-                    <TextInput
-                        placeholder="Address"
+                        placeholder="Home Address"
                         value={user.address}
-                        onChangeText={(text) => setUser({...user, address: text})}
+                        onChangeText={(text) => setUser({ ...user, address: text })}
                         style={styles.input}
                         placeholderTextColor="gray"
                     />
-                    <Text style={styles.label}>Current Password*:</Text>
+
+                    <Text style={styles.sectionTitle}>Security Details</Text>
+                    <Text style={styles.label}><FontAwesome5 name="lock" /> Current Password:</Text>
                     <TextInput
                         placeholder="Current Password"
                         value={oldPassword}
@@ -225,27 +236,52 @@ const UserEditInfo: React.FC = () => {
                         secureTextEntry
                         placeholderTextColor="gray"
                     />
-                    <Text style={styles.label}>New Password:</Text>
-                    <Text style={styles.helperText}>Leave blank to keep current password!</Text>
+                    <Text style={styles.label}><FontAwesome5 name="key" /> New Password:</Text>
                     <TextInput
                         placeholder="New Password"
                         value={user.password}
-                        onChangeText={(text) => setUser({...user, password: text})}
+                        onChangeText={handlePasswordChange}
                         style={styles.input}
-                        secureTextEntry // Secure entry for password
-                        placeholderTextColor="gray"
-                    />
-                    <TextInput
-                        placeholder="Confirm Password"
-                        value={RePassword}
-                        onChangeText={setRePassword}
                         secureTextEntry
-                        style={styles.input}
                         placeholderTextColor="gray"
                     />
-
+                    <View style={styles.passwordCriteria}>
+                        <Text style={{ color: passwordCriteria.length ? 'green' : 'red' }}>
+                            • At least 8 characters long
+                        </Text>
+                        <Text style={{ color: passwordCriteria.uppercase ? 'green' : 'red' }}>
+                            • At least one uppercase letter
+                        </Text>
+                        <Text style={{ color: passwordCriteria.lowercase ? 'green' : 'red' }}>
+                            • At least one lowercase letter
+                        </Text>
+                        <Text style={{ color: passwordCriteria.number ? 'green' : 'red' }}>
+                            • At least one number
+                        </Text>
+                        <Text style={{ color: passwordCriteria.specialChar ? 'green' : 'red' }}>
+                            • At least one special character (@, #, !, *, %, $)
+                        </Text>
+                    </View>
+                    <Text style={styles.label}><FontAwesome5 name="check-circle" /> Confirm Password:</Text>
+                    <View style={styles.inputWithIcon}>
+                        <TextInput
+                            placeholder="Confirm Password"
+                            value={rePassword}
+                            onChangeText={handleRePasswordChange}
+                            style={styles.input}
+                            secureTextEntry
+                            placeholderTextColor="gray"
+                        />
+                        {passwordMatch !== null && (
+                            <Ionicons
+                                name={passwordMatch ? 'checkmark-circle' : 'close-circle'}
+                                size={24}
+                                color={passwordMatch ? 'green' : 'red'}
+                                style={styles.icon}
+                            />
+                        )}
+                    </View>
                     {errorMessage && <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>}
-
                     <TouchableOpacity onPress={handleUpdateInfo} style={styles.updateButton}>
                         <ThemedText style={styles.buttonText}>Update Info</ThemedText>
                     </TouchableOpacity>
