@@ -1,19 +1,14 @@
-import React, {useState} from 'react';
-import {FlatList, Platform, Switch, Text, TextInput, TouchableOpacity, View} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import {StackNavigationProp} from '@react-navigation/stack';
-import {RootStackParamList} from '@/components/navigation/NavigationTypes';
-import ThemedText from '@/components/ThemedText';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import Slider from '@react-native-community/slider';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import {FontAwesome, Ionicons} from "@expo/vector-icons";
-import baseStyles from '../../styles/General';
-import createRide from '../../styles/CreateRide';
-
-const styles = { ...baseStyles, ...createRide};
+import React, { useState } from 'react';
+import {FlatList, Platform, Switch, Text, TextInput, TouchableOpacity, View,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '@/components/navigation/NavigationTypes';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import styles from '../../styles/CreateRide';
 
 const API_BASE_URL = 'https://mohammadalsheikh.pythonanywhere.com/api';
 
@@ -33,33 +28,23 @@ const CreateRide: React.FC = () => {
     const [numPassengers, setNumPassengers] = useState(1);
     const [ADA, setADA] = useState(false);
     const [pickupTime, setPickupTime] = useState(new Date());
+    const [showPicker, setShowPicker] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const [showPicker, setShowPicker] = useState(false);
 
-    // Additional helper function
-    const isToday = (date: Date) => {
-        const today = new Date();
-        return (
-            date.getDate() === today.getDate() &&
-            date.getMonth() === today.getMonth() &&
-            date.getFullYear() === today.getFullYear()
-        );
-    };
-
-    const handleDateChange = (date: Date) => {
-        setPickupTime(date);
-        setShowPicker(true);
-    };
-
-    const fetchLocationSuggestions = async (query: string, setSuggestions: React.Dispatch<React.SetStateAction<LocationSuggestion[]>>) => {
+    const fetchLocationSuggestions = async (
+        query: string,
+        setSuggestions: React.Dispatch<React.SetStateAction<LocationSuggestion[]>>
+    ) => {
         if (query.length > 2) {
             try {
-                const response = await fetch(`${API_BASE_URL}/locations/search/?query=${encodeURIComponent(query)}`);
+                const response = await fetch(
+                    `${API_BASE_URL}/locations/search/?query=${encodeURIComponent(query)}`
+                );
                 const data = await response.json();
                 setSuggestions(data.predictions || []);
             } catch (error) {
-                console.error("Error fetching location suggestions", error);
+                console.error('Error fetching location suggestions', error);
             }
         } else {
             setSuggestions([]);
@@ -91,18 +76,23 @@ const CreateRide: React.FC = () => {
             });
 
             const data = await response.json();
-            await AsyncStorage.setItem('inProgress', JSON.stringify(data.inProgress));
+
             if (response.status === 201) {
+                // Ride created successfully
                 await AsyncStorage.setItem('ride_code', JSON.stringify(data.ride_code));
                 await AsyncStorage.setItem('ride_id_view', data.ride_id);
                 await AsyncStorage.setItem('ride_driverName', data.driver);
-                navigation.navigate('DisplayRideInfo', {rideId: data.ride_id, driverName: data.driver});
+                navigation.navigate('DisplayRideInfo', {
+                    rideId: data.ride_id,
+                    driverName: data.driver,
+                });
             } else if (response.status === 200) {
+                // Ride added to queue
                 await AsyncStorage.setItem('ride_code', JSON.stringify(data.ride_code));
                 navigation.navigate('Queue', {
                     queuePosition: data.queue_position,
                     rideId: data.ride_id,
-                    driverName: data.driver
+                    driverName: data.driver,
                 });
             } else {
                 setErrorMessage(data.message);
@@ -118,31 +108,36 @@ const CreateRide: React.FC = () => {
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back-circle" size={30} color="black"/>
+                    <Ionicons name="arrow-back-circle" size={30} color="black" />
                 </TouchableOpacity>
-                <ThemedText type="title" style={styles.headerText}>Request Ride</ThemedText>
+                <Text style={styles.headerText}>Request Ride</Text>
             </View>
-            {/* Pickup Location Title and Input */}
-            <Text style={styles.label}>Pickup Location:</Text>
-            <TextInput
-                placeholder="Enter pickup location"
-                value={pickupLocation}
-                onChangeText={async (text) => {
-                    setPickupLocation(text);
-                    await fetchLocationSuggestions(text, setPickupSuggestions);
-                }}
-                style={styles.input}
-                placeholderTextColor="gray"
-            />
+
+            {/* Pickup Location */}
+            <View style={styles.inputWrapper}>
+                <Ionicons name="location-outline" size={24} style={styles.inputIcon} />
+                <TextInput
+                    placeholder="Enter pickup location"
+                    value={pickupLocation}
+                    onChangeText={async (text) => {
+                        setPickupLocation(text);
+                        await fetchLocationSuggestions(text, setPickupSuggestions);
+                    }}
+                    style={styles.input}
+                    placeholderTextColor="gray"
+                />
+            </View>
             {pickupSuggestions.length > 0 && (
                 <FlatList
                     data={pickupSuggestions}
                     keyExtractor={(item) => item.place_id}
-                    renderItem={({item}) => (
-                        <TouchableOpacity onPress={() => {
-                            setPickupLocation(item.description);
-                            setPickupSuggestions([]);
-                        }}>
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            onPress={() => {
+                                setPickupLocation(item.description);
+                                setPickupSuggestions([]);
+                            }}
+                        >
                             <Text style={styles.suggestion}>{item.description}</Text>
                         </TouchableOpacity>
                     )}
@@ -150,27 +145,31 @@ const CreateRide: React.FC = () => {
                 />
             )}
 
-            {/* Dropoff Location Title and Input */}
-            <Text style={styles.label}>Dropoff Location:</Text>
-            <TextInput
-                placeholder="Enter dropoff location"
-                value={dropoffLocation}
-                onChangeText={async (text) => {
-                    setDropoffLocation(text);
-                    await fetchLocationSuggestions(text, setDropoffSuggestions);
-                }}
-                style={styles.input}
-                placeholderTextColor="gray"
-            />
+            {/* Dropoff Location */}
+            <View style={styles.inputWrapper}>
+                <Ionicons name="location-outline" size={24} style={styles.inputIcon} />
+                <TextInput
+                    placeholder="Enter dropoff location"
+                    value={dropoffLocation}
+                    onChangeText={async (text) => {
+                        setDropoffLocation(text);
+                        await fetchLocationSuggestions(text, setDropoffSuggestions);
+                    }}
+                    style={styles.input}
+                    placeholderTextColor="gray"
+                />
+            </View>
             {dropoffSuggestions.length > 0 && (
                 <FlatList
                     data={dropoffSuggestions}
                     keyExtractor={(item) => item.place_id}
-                    renderItem={({item}) => (
-                        <TouchableOpacity onPress={() => {
-                            setDropoffLocation(item.description);
-                            setDropoffSuggestions([]);
-                        }}>
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            onPress={() => {
+                                setDropoffLocation(item.description);
+                                setDropoffSuggestions([]);
+                            }}
+                        >
                             <Text style={styles.suggestion}>{item.description}</Text>
                         </TouchableOpacity>
                     )}
@@ -178,61 +177,56 @@ const CreateRide: React.FC = () => {
                 />
             )}
 
-            {/* Date and Time Picker */}
+            {/* Pickup Time */}
             <Text style={styles.label}>Pickup Time:</Text>
-            <View style={styles.timePickerContainer}>
-                {Platform.OS === 'web' ? (
-                    <DatePicker
-                        selected={pickupTime}
-                        onChange={(date) => date && setPickupTime(date)}
-                        showTimeSelect
-                        dateFormat="Pp"
-                        minDate={new Date()}
-                        minTime={isToday(pickupTime) ? new Date() : new Date(new Date().setHours(0, 0, 0, 0))}
-                        maxTime={new Date(new Date().setHours(23, 59, 59, 999))}
-                        customInput={<TextInput style={styles.timeInput}/>}
-                    />
-                ) : (
-                    <>
-                        <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.timeButton}>
-                            <Text style={styles.timeText}>{pickupTime.toLocaleString()}</Text>
-                        </TouchableOpacity>
-                        {showPicker && (
-                            <DateTimePicker
-                                value={pickupTime}
-                                mode="datetime"
-                                display="default"
-                                onChange={(event, date) => date && handleDateChange(date)}
-                            />
-                        )}
-                    </>
-                )}
+            <TouchableOpacity style={styles.timePickerButton} onPress={() => setShowPicker(true)}>
+                <Text style={styles.timePickerText}>{pickupTime.toLocaleString()}</Text>
+            </TouchableOpacity>
+            {Platform.OS === 'web' && showPicker && (
+                <DatePicker
+                    selected={pickupTime}
+                    onChange={(date) => date && setPickupTime(date)}
+                    showTimeSelect
+                    timeIntervals={1}
+                    dateFormat="Pp"
+                />
+            )}
+
+            {/* Number of Passengers */}
+            <Text style={styles.label}>Number of Passengers:</Text>
+            <View style={styles.carouselContainer}>
+                <TouchableOpacity
+                    onPress={() => setNumPassengers((prev) => Math.max(1, prev - 1))}
+                    style={styles.carouselButton}
+                >
+                    <Ionicons name="remove-circle-outline" size={40} color="#007bff" />
+                </TouchableOpacity>
+                <View style={styles.passengerBubble}>
+                    <Text style={styles.passengerCount}>{numPassengers}</Text>
+                </View>
+                <TouchableOpacity
+                    onPress={() => setNumPassengers((prev) => Math.min(5, prev + 1))}
+                    style={styles.carouselButton}
+                >
+                    <Ionicons name="add-circle-outline" size={40} color="#007bff" />
+                </TouchableOpacity>
             </View>
 
-            {/* Passenger Slider */}
-            <Text style={styles.label}>Number of Passengers: {numPassengers}</Text>
-            <Slider
-                minimumValue={1}
-                maximumValue={5}
-                step={1}
-                value={numPassengers}
-                onValueChange={setNumPassengers}
-                style={styles.slider}
-            />
-
-            {/* ADA Switch with Accessibility Icon */}
+            {/* ADA Switch */}
             <View style={styles.toggleContainer}>
-                <FontAwesome name="wheelchair" size={24} color={ADA ? '#81b0ff' : '#767577'}/>
+                <FontAwesome name="wheelchair" size={24} color={ADA ? '#81b0ff' : '#767577'} />
                 <Switch
                     value={ADA}
                     onValueChange={setADA}
-                    trackColor={{false: '#767577', true: '#81b0ff'}}
+                    trackColor={{ false: '#767577', true: '#81b0ff' }}
                     thumbColor={ADA ? '#f5dd4b' : '#f4f3f4'}
                 />
             </View>
 
-            {errorMessage && <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>}
+            {/* Error Message */}
+            {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
+            {/* Create Ride Button */}
             <TouchableOpacity onPress={handleCreateRide} style={styles.createRideButton} disabled={loading}>
                 <Text style={styles.createRideText}>{loading ? 'Creating Ride...' : 'Create Ride'}</Text>
             </TouchableOpacity>
